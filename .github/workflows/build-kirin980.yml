@@ -27,10 +27,28 @@ jobs:
           unzip -q /tmp/android-ndk-r14b.zip -d $HOME
 
       - name: Prepare KernelSU
+        shell: bash
         run: |
-          if [ ! -f drivers/kernelsu/Kconfig ]; then
-            bash KernelSU/kernel/setup.sh
-          fi
+          set -euxo pipefail
+
+          KSU_COMMIT=156b17f69d8fcdbc0d7e4e1904ecbb1d769bf6
+
+          test -d KernelSU
+          test -f KernelSU/kernel/setup.sh
+          test "$(git -C KernelSU rev-parse HEAD)" = "$KSU_COMMIT"
+
+          cp KernelSU/kernel/setup.sh /tmp/kernelsu-setup.sh
+
+          # 使用仓库锁定的 KernelSU 版本，不执行 git pull
+          sed -i \
+            -e '/^[[:space:]]*git stash/d' \
+            -e '/^[[:space:]]*git pull/d' \
+            /tmp/kernelsu-setup.sh
+
+          bash /tmp/kernelsu-setup.sh "$KSU_COMMIT"
+
+          test -L drivers/kernelsu
+          test -f drivers/kernelsu/Kconfig
 
       - name: Build kernel
         run: |
