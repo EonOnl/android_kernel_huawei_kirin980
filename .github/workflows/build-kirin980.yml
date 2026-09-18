@@ -39,7 +39,6 @@ jobs:
 
           cp KernelSU/kernel/setup.sh /tmp/kernelsu-setup.sh
 
-          # 使用仓库锁定的 KernelSU 版本，不执行 git pull
           sed -i \
             -e '/^[[:space:]]*git stash/d' \
             -e '/^[[:space:]]*git pull/d' \
