@@ -2,6 +2,9 @@ name: Build Kirin980 KernelSU Kernel
 
 on:
   workflow_dispatch:
+  push:
+    branches:
+      - codex/diagnose-kirin980-20260918
 
 jobs:
   build:
@@ -49,6 +52,7 @@ jobs:
 
       - name: Build kernel
         run: |
+          set -o pipefail
           export ARCH=arm64
           export CROSS_COMPILE=aarch64-linux-android-
           export PATH="$HOME/android-ndk-r14b/toolchains/aarch64-linux-android-4.9/prebuilt/linux-x86_64/bin:$PATH"
@@ -58,7 +62,25 @@ jobs:
           make ARCH=arm64 O=out HOSTCFLAGS="-fcommon" Mate20_kirin980_ksu_defconfig
           grep -E '^CONFIG_TEE_CFC(=|_)' out/.config
           make ARCH=arm64 O=out HOSTCFLAGS="-fcommon" olddefconfig
-          make ARCH=arm64 O=out HOSTCFLAGS="-fcommon" -j$(nproc)
+          make ARCH=arm64 O=out HOSTCFLAGS="-fcommon" -j$(nproc) 2>&1 | tee build.log
+
+      - name: Summarize compiler errors
+        if: failure()
+        run: |
+          echo "===== first compiler diagnostics ====="
+          grep -n -m 80 -E 'error:|fatal error:|undefined reference|No such file|command not found|Error [0-9]+' build.log || true
+          echo "===== last 200 lines ====="
+          tail -n 200 build.log || true
+
+      - name: Upload build diagnostics
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: kirin980-build-diagnostics
+          path: |
+            build.log
+            out/.config
+          if-no-files-found: warn
 
       - name: Pack boot images
         run: |
