@@ -224,8 +224,10 @@ class Graph(object):
 
 		self.addDFAState(DFAState().addNFAState(self.getNFAState(Graph.STATE_STOP_IDX)))
 		self.addDFAState(DFAState().addNFAState(self.getNFAState(Graph.STATE_START_IDX)))
-		processingDFAStates = set([])
-		processingDFAStates.add(self.getDFAState(Graph.STATE_START_IDX))
+		# DFAState defines equality over mutable state, so it is intentionally
+		# not hashable. A stack is sufficient here because new states are
+		# enqueued only when addDFAState() reports that they were added.
+		processingDFAStates = [self.getDFAState(Graph.STATE_START_IDX)]
 
 		while len(processingDFAStates) > 0:
 			curDFAState = processingDFAStates.pop()
