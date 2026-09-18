@@ -55,8 +55,8 @@ jobs:
 
           rm -rf out include/config
 
-          make ARCH=arm64 O=out Mate20_kirin980_ksu_defconfig
-          make ARCH=arm64 O=out -j$(nproc)
+          make ARCH=arm64 O=out HOSTCFLAGS="-fcommon" Mate20_kirin980_ksu_defconfig
+          make ARCH=arm64 O=out HOSTCFLAGS="-fcommon" -j$(nproc)
 
       - name: Pack boot images
         run: |
