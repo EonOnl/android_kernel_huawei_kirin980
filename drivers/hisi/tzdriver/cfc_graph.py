@@ -238,5 +238,5 @@ class Graph(object):
 				else:
 					nextDFAState, added = self.addDFAState(nextDFAState)
 					if added:
-						processingDFAStates.add(nextDFAState)
+						processingDFAStates.append(nextDFAState)
 				curDFAState.transMap[event] = nextDFAState
