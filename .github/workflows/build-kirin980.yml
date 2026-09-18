@@ -21,7 +21,7 @@ jobs:
           sudo apt update
           sudo apt install -y \
             build-essential bc bison flex libssl-dev libelf-dev \
-            python3 curl unzip rsync git cpio
+            libncurses5 python3 curl unzip rsync git cpio
 
       - name: Download Android NDK r14b
         run: |
@@ -57,6 +57,10 @@ jobs:
           export CROSS_COMPILE=aarch64-linux-android-
           export PATH="$HOME/android-ndk-r14b/toolchains/aarch64-linux-android-4.9/prebuilt/linux-x86_64/bin:$PATH"
 
+          echo "===== toolchain dependency check ====="
+          command -v aarch64-linux-android-cpp
+          ldd "$(readlink -f "$(command -v aarch64-linux-android-cpp)")" | grep -E 'not found|ncurses' || true
+
           rm -rf out include/config
 
           make ARCH=arm64 O=out HOSTCFLAGS="-fcommon" Mate20_kirin980_ksu_defconfig
@@ -67,10 +71,15 @@ jobs:
       - name: Summarize compiler errors
         if: failure()
         run: |
-          echo "===== first compiler diagnostics ====="
-          grep -n -m 80 -E 'error:|fatal error:|undefined reference|No such file|command not found|Error [0-9]+' build.log || true
-          echo "===== last 200 lines ====="
-          tail -n 200 build.log || true
+          echo "===== first relevant diagnostics ====="
+          grep -n -m 40 -E 'error:|fatal error:|undefined reference|BFD:|No such file|command not found|Error [0-9]+' build.log || true
+          echo "===== first cfc_data.c failure context ====="
+          line="$(grep -n -m 1 'cfc_data.c' build.log | cut -d: -f1 || true)"
+          if [ -n "$line" ]; then
+            start=$((line > 30 ? line - 30 : 1))
+            end=$((line + 20))
+            sed -n "${start},${end}p" build.log || true
+          fi
 
       - name: Upload build diagnostics
         if: always()
